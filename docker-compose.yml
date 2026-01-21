@@ -1,9 +1,7 @@
-version: "3.9"
-
 services:
   mysql:
     image: mysql:8.0
-    container_name: filmes-mysql
+    container_name: cine-track-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -11,7 +9,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: user123
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
