@@ -1,8 +1,9 @@
 package com.catalogo.filmes.controller;
 
+import com.catalogo.filmes.infra.elastic.document.FilmeDocument;
 import com.catalogo.filmes.dto.FilmeRequest;
 import com.catalogo.filmes.dto.FilmeResponse;
-import com.catalogo.filmes.payload.CriteriaRequest;
+import com.catalogo.filmes.service.FilmeSearchService;
 import com.catalogo.filmes.service.FilmeService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -11,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 
 @RestController
@@ -20,9 +21,12 @@ import java.util.Optional;
 public class FilmeController {
 
     private final FilmeService filmeService;
+    private final FilmeSearchService filmeSearchService;
 
-    public FilmeController(FilmeService filmeService) {
+
+    public FilmeController(FilmeService filmeService, FilmeSearchService filmeSearchService) {
         this.filmeService = filmeService;
+        this.filmeSearchService = filmeSearchService;
     }
 
     @PostMapping
@@ -70,15 +74,7 @@ public class FilmeController {
 
 
     @GetMapping("/search")
-    public ResponseEntity<List<FilmeResponse>> search(
-            @RequestParam(value = "texto", required = false) Optional<String> texto){
-
-        CriteriaRequest criteriaRequest =
-                new CriteriaRequest(texto, texto);
-
-        List<FilmeResponse> filmes =
-                filmeService.search(criteriaRequest);
-
-        return ResponseEntity.ok(filmes);
+    public List<FilmeDocument> search(@RequestParam String query) throws IOException {
+        return filmeSearchService.buscar(query);
     }
 }

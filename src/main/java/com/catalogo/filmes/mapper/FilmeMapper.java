@@ -2,6 +2,7 @@ package com.catalogo.filmes.mapper;
 
 import com.catalogo.filmes.dto.FilmeRequest;
 import com.catalogo.filmes.dto.FilmeResponse;
+import com.catalogo.filmes.infra.elastic.document.FilmeDocument;
 import com.catalogo.filmes.model.Filme;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,17 @@ public class FilmeMapper {
                 filme.getAno(),
                 filme.getNota(),
                 filme.getSinopse()
+        );
+    }
+
+    public FilmeDocument toDocument(Filme filme) {
+        return new FilmeDocument(
+                filme.getId(),
+                filme.getTitulo(),
+                filme.getGenero(),
+                filme.getSinopse(),
+                filme.getAno(),
+                filme.getNota()
         );
     }
 }

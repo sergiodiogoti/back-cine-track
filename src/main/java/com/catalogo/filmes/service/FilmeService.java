@@ -2,70 +2,76 @@ package com.catalogo.filmes.service;
 
 import com.catalogo.filmes.dto.FilmeRequest;
 import com.catalogo.filmes.dto.FilmeResponse;
-import com.catalogo.filmes.dto.PageResponse;
 import com.catalogo.filmes.exception.ResourceNotFoundException;
+import com.catalogo.filmes.infra.elastic.document.FilmeDocument;
 import com.catalogo.filmes.mapper.FilmeMapper;
 import com.catalogo.filmes.model.Filme;
-import com.catalogo.filmes.payload.CriteriaRequest;
+import com.catalogo.filmes.repository.FilmeElasticRepository;
 import com.catalogo.filmes.repository.FilmeRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FilmeService {
 
     private final FilmeRepository filmeRepository;
-    private final EntityManager entityManager;
+    private final FilmeElasticRepository filmeElasticRepository;
     private final FilmeMapper mapper;
 
     public FilmeService(
             FilmeRepository filmeRepository,
-            EntityManager entityManager,
+            FilmeElasticRepository filmeElasticRepository,
             FilmeMapper mapper
     ) {
         this.filmeRepository = filmeRepository;
-        this.entityManager = entityManager;
+        this.filmeElasticRepository = filmeElasticRepository;
         this.mapper = mapper;
     }
 
+    @Transactional
     public FilmeResponse salvar(FilmeRequest dto) {
         Filme filme = mapper.toEntity(dto);
         Filme salvo = filmeRepository.save(filme);
+
+        FilmeDocument filmeDocument = mapper.toDocument(salvo);
+        filmeElasticRepository.save(filmeDocument);
+
         return mapper.toDTO(salvo);
     }
 
-    public FilmeResponse buscarPorId(Long id) {
-        Filme filme = filmeRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Filme não encontrado com id: " + id)
-                );
-        return mapper.toDTO(filme);
-    }
-
+    @Transactional
     public FilmeResponse atualizar(Long id, FilmeRequest dto) {
         if (!filmeRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Filme não encontrado com id: " + id);
+            throw new ResourceNotFoundException(String.format("Filme com id: %s não foi encontrado na base de dados ",id));
         }
 
         Filme filme = mapper.toEntity(dto);
         filme.setId(id);
 
-        return mapper.toDTO(filmeRepository.save(filme));
+        Filme filmeAtualizado = filmeRepository.save(filme);
+
+        FilmeDocument filmeDocument = mapper.toDocument(filmeAtualizado);
+        filmeElasticRepository.save(filmeDocument);
+
+        return mapper.toDTO(filmeAtualizado);
     }
+
+    public FilmeResponse buscarPorId(Long id) {
+        Filme filme = filmeRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(String.format("Filme com id: %s não foi encontrado na base de dados ",id))
+                );
+        return mapper.toDTO(filme);
+    }
+
 
     public void deletar(Long id) {
         if (!filmeRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Filme não encontrado com id: " + id);
+            throw new ResourceNotFoundException(String.format("Filme com id: %s não foi encontrado na base de dados ",id));
         }
         filmeRepository.deleteById(id);
     }
@@ -82,43 +88,5 @@ public class FilmeService {
                 filmeRepository.findAll(pageRequest);
 
         return pageResult.map(mapper::toDTO);
-    }
-
-    public List<FilmeResponse> search(CriteriaRequest criteriaRequest) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Filme> cq = cb.createQuery(Filme.class);
-        Root<Filme> filme = cq.from(Filme.class);
-
-        List<Predicate> predicates = new ArrayList<>();
-
-        if (criteriaRequest.getTitulo().isPresent()) {
-            predicates.add(
-                    cb.like(
-                            cb.lower(filme.get("titulo")),
-                            "%" + criteriaRequest.getTitulo().get().toLowerCase() + "%"
-                    )
-            );
-        }
-
-        if (criteriaRequest.getGenero().isPresent()) {
-            predicates.add(
-                    cb.equal(
-                            filme.get("genero"),
-                            criteriaRequest.getGenero().get()
-                    )
-            );
-        }
-
-        cq.where(predicates.toArray(Predicate[]::new));
-
-        return entityManager.createQuery(cq)
-                .getResultList()
-                .stream()
-                .map(mapper::toDTO)
-                .toList();
-    }
-
-    public long count() {
-        return filmeRepository.count();
     }
 }

@@ -1,7 +1,9 @@
+version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
-    container_name: cine-track-mysql
+    container_name: filmes-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -16,5 +18,24 @@ services:
     command:
       --default-authentication-plugin=mysql_native_password
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
 volumes:
   mysql_data:
+  esdata:
