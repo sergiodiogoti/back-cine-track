@@ -17,7 +17,7 @@ Este projeto faz parte de um **desenvolvimento Full Stack**, integrando backend 
 * JWT (Auth0 – `java-jwt`)
 * Bean Validation
 * MySQL 8 (Docker)
-* H2 Database (ambiente local/testes)
+* ElasticSearch 7 (Docker)
 * Lombok
 * Maven
 
@@ -33,6 +33,7 @@ src/main/java/com/catalogo/filmes
 ├── controller      → Controllers REST
 ├── dto             → DTOs de entrada e saída
 ├── exception       → Tratamento de erros
+├── infra           → Configurações do ElasticSearch
 ├── mapper          → Conversão Entity ↔ DTO
 ├── model           → Entidades JPA
 ├── payload         → Objetos de filtro (Criteria)
@@ -121,27 +122,24 @@ GET /api/filmes?page=0&size=10
 ### 📌 Buscar Filmes com Filtro Dinâmico
 
 ```
-GET /api/filmes/search?texto=matrix
+GET /api/filmes/search?query=matrix
 ```
 
-A busca utiliza **Criteria API**, permitindo filtros flexíveis por:
-
-* Título (like, case insensitive)
-* Gênero
+A busca no ElasticSearch utiliza **Criteria**, permitindo filtros flexíveis
 
 ---
 
-## 🔎 Filtro Dinâmico (Criteria API)
+## 🔎 Filtro Dinâmico
 
-A busca avançada é construída dinamicamente com `EntityManager` e `CriteriaBuilder`, permitindo adicionar filtros conforme os parâmetros enviados, sem criar múltiplos métodos no repositório.
+A busca avançada é construída dinamicamente com `ElasticSearch`, permitindo adicionar filtros conforme os parâmetros enviados, sem criar múltiplos métodos no repositório.
 
 ---
 
 ## 🗄️ Banco de Dados
 
-### 📦 MySQL (Docker)
+### 📦 MySQL & ElasticSearch (Docker)
 
-O projeto possui **Docker Compose** para subir o MySQL automaticamente.
+O projeto possui **Docker Compose** para subir o MySQL e o ElasticSearch automaticamente.
 
 Arquivo:
 
@@ -170,13 +168,6 @@ O script SQL inicial é executado automaticamente:
 
 > As senhas estão criptografadas com **BCrypt**.
 
----
-
-## 🧪 Banco em Memória (H2)
-
-Para testes e desenvolvimento rápido, o projeto também suporta **H2**, configurado como dependência `runtime`.
-
----
 
 ## ▶️ Como Executar o Projeto
 
@@ -189,7 +180,7 @@ Para testes e desenvolvimento rápido, o projeto também suporta **H2**, configu
 ### Passos
 
 ```bash
-# Subir o banco
+# Subir o Mysql e ElasticSearch
 docker-compose up -d
 
 # Rodar a aplicação
