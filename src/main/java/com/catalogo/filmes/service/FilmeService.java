@@ -43,6 +43,15 @@ public class FilmeService {
         return mapper.toDTO(salvo);
     }
 
+
+    public FilmeResponse buscarPorId(Long id) {
+        Filme filme = filmeRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(String.format("Filme com id: %s não foi encontrado na base de dados ",id))
+                );
+        return mapper.toDTO(filme);
+    }
+
     @Transactional
     public FilmeResponse atualizar(Long id, FilmeRequest dto) {
         if (!filmeRepository.existsById(id)) {
@@ -60,20 +69,15 @@ public class FilmeService {
         return mapper.toDTO(filmeAtualizado);
     }
 
-    public FilmeResponse buscarPorId(Long id) {
-        Filme filme = filmeRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(String.format("Filme com id: %s não foi encontrado na base de dados ",id))
-                );
-        return mapper.toDTO(filme);
-    }
 
-
+    @Transactional
     public void deletar(Long id) {
         if (!filmeRepository.existsById(id)) {
             throw new ResourceNotFoundException(String.format("Filme com id: %s não foi encontrado na base de dados ",id));
         }
         filmeRepository.deleteById(id);
+
+        filmeElasticRepository.deleteById(id);
     }
 
     public Page<FilmeResponse> getAllPaginado(int page, int size) {
